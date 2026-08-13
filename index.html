@@ -748,7 +748,7 @@ onclick="openInvitation(); return false;">Abrir invitación</a>
 
 <div class="modal" id="modal" onclick="if(event.target===this)closeModal()"><div class="box"><button class="close" onclick="closeModal()">×</button><div class="eyebrow" id="mt"></div><h2 id="mh"></h2><p id="md"></p></div></div>
 <button class="music" id="music" onclick="toggleMusic()" title="Música">♪</button>
-<audio id="audio" src="maliBu.mp3" loop preload="auto"></audio>
+<audio id="audio" preload="auto" loop playsinline></audio>
 
 <script>
 const GOOGLE_SHEETS_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbxFvneUw3xbcEHnmn-Ht6jhYRurmtj47Fo1Y9rRkyy59Nyoh8mAMFm9tHA7XS3gqg15/exec';
@@ -979,52 +979,66 @@ function calendar(){
     alert('No se ha podido preparar el calendario en este dispositivo.');
   }
 }
-function toggleMusic(){
-  var audio=document.getElementById('audio');
-  var button=document.getElementById('music');
-  if(!audio) return;
-  if(audio.paused){
-    audio.play().then(function(){
-      if(button) button.classList.add('playing');
-    }).catch(function(){});
-  }else{
-    audio.pause();
-    if(button) button.classList.remove('playing');
-  }
-}
 </script>
 
 <script id="opening-script">
 document.body.classList.add('locked');
 
-function openInvitation() {
-  var opening = document.getElementById('opening');
+const MUSIC_URL = 'https://raw.githubusercontent.com/yoryoooo/boda/refs/heads/main/maliBu.mp3';
+
+function startMusic(){
   var audio = document.getElementById('audio');
   var button = document.getElementById('music');
+  if(!audio) return;
 
-  // La pulsación del botón permite iniciar el audio incluso con las
-  // restricciones de reproducción automática de los navegadores.
-  if (audio) {
-    audio.volume = 0.08;
-    audio.play().then(function(){
-      if (button) button.classList.add('playing');
+  // Cargamos el MP3 al pulsar: así evitamos problemas de autoplay y de carga previa.
+  if(!audio.src || audio.src.indexOf('maliBu.mp3') === -1){
+    audio.src = MUSIC_URL;
+    audio.load();
+  }
+  audio.volume = 0.08;
 
-      // Entrada progresiva de la música para que acompañe la apertura.
-      var targetVolume = 0.45;
-      var steps = 36;
-      var step = (targetVolume - audio.volume) / steps;
-      var fade = setInterval(function(){
-        if (audio.paused || audio.volume >= targetVolume) {
-          clearInterval(fade);
-          return;
-        }
-        audio.volume = Math.min(targetVolume, audio.volume + step);
-      }, 120);
-    }).catch(function(error){
-      console.log('No se pudo iniciar la música:', error);
+  var promise = audio.play();
+  if(promise && typeof promise.then === 'function'){
+    promise.then(function(){
+      if(button) button.classList.add('playing');
+      var from = 0.08, to = 0.45, duration = 7000, start = performance.now();
+      function fade(now){
+        if(audio.paused) return;
+        var t = Math.min((now-start)/duration, 1);
+        audio.volume = from + (to-from)*t;
+        if(t < 1) requestAnimationFrame(fade);
+      }
+      requestAnimationFrame(fade);
+    }).catch(function(err){
+      console.error('No se pudo reproducir la música:', err);
     });
   }
+}
 
+function toggleMusic(){
+  var audio=document.getElementById('audio');
+  var button=document.getElementById('music');
+  if(!audio) return;
+  if(audio.paused){
+    if(!audio.src){
+      audio.src = MUSIC_URL;
+      audio.load();
+    }
+    audio.play().then(function(){
+      if(button) button.classList.add('playing');
+    }).catch(function(err){
+      console.error('No se pudo reproducir la música:', err);
+    });
+  }else{
+    audio.pause();
+    if(button) button.classList.remove('playing');
+  }
+}
+
+function openInvitation() {
+  startMusic();
+  var opening = document.getElementById('opening');
   document.body.classList.remove('locked');
   if (opening && opening.parentNode) opening.parentNode.removeChild(opening);
   if (window.startCountdown) window.startCountdown();
