@@ -319,6 +319,7 @@ body:has(#welcome:target) { overflow: auto !important; }
 
 /* Ajuste de los dos botones de acompañantes */
 #guestsGroup.choice-group-inline{grid-template-columns:repeat(2,1fr)}
+#confirmToGroup.choice-group-inline{grid-template-columns:repeat(2,1fr)}
 
 @media(max-width:500px){
   .opening-date{font-size:12px !important;letter-spacing:.22em !important}
@@ -677,6 +678,12 @@ onclick="var o=document.getElementById('opening');document.body.classList.remove
   </div>
   <input type="hidden" id="guests" value="0">
   <label>Mensaje</label><textarea id="note" placeholder="Si tienes alguna alergia o necesidad especial, este es tu momento"></textarea>
+  <label>¿A quién confirmas?</label>
+  <div class="choice-group choice-group-inline" id="confirmToGroup">
+   <button type="button" class="choice-btn" data-value="34619404882">Jorge</button>
+   <button type="button" class="choice-btn" data-value="34651180742">Mara</button>
+  </div>
+  <input type="hidden" id="confirmTo" value="34619404882">
   <button class="btn dark" id="rsvpSubmit" type="submit">Confirmar</button>
   <div id="success" class="success"></div>
  </form>
@@ -816,6 +823,17 @@ document.querySelectorAll('#guestsGroup .choice-btn').forEach(function(btn){
 var guestButtons=document.querySelectorAll('#guestsGroup .choice-btn');
 if(guestButtons.length) guestButtons[0].classList.add('sel');
 
+document.querySelectorAll('#confirmToGroup .choice-btn').forEach(function(btn){
+  btn.addEventListener('click',function(){
+    document.querySelectorAll('#confirmToGroup .choice-btn').forEach(function(b){b.classList.remove('sel')});
+    btn.classList.add('sel');
+    var c=document.getElementById('confirmTo');
+    if(c) c.value=btn.dataset.value || '';
+  });
+});
+var confirmToButtons=document.querySelectorAll('#confirmToGroup .choice-btn');
+if(confirmToButtons.length) confirmToButtons[0].classList.add('sel');
+
 var mainForm=document.getElementById('form');
 if(mainForm){
   mainForm.addEventListener('submit',function(e){
@@ -856,7 +874,9 @@ if(mainForm){
             '\nAcompañantes: '+guests+'.'+
             (note?'\nAlergias / necesidades especiales: '+note:'');
 
-    var waUrl='https://wa.me/'+WHATSAPP_NUMBER+'?text='+encodeURIComponent(msg);
+    var confirmToEl=document.getElementById('confirmTo');
+    var targetNumber=(confirmToEl && confirmToEl.value) || WHATSAPP_NUMBER;
+    var waUrl='https://wa.me/'+targetNumber+'?text='+encodeURIComponent(msg);
     var box=document.getElementById('success');
     if(box){
       box.style.display='block';
