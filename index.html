@@ -546,7 +546,7 @@ input,textarea,select{
     <div class="opening-date"><span>11 · 09 · 2026</span><span class="opening-place">A Coruña</span></div>
     <div class="opening-ornament">— ◆ —</div>
     <a class="opening-button" href="#welcome" role="button"
-onclick="var o=document.getElementById('opening');document.body.classList.remove('locked');if(o&&o.parentNode){o.parentNode.removeChild(o);}if(window.startCountdown){window.startCountdown();}">Abrir invitación</a>
+onclick="openInvitation(); return false;">Abrir invitación</a>
     <div class="opening-hint">Pulsa para entrar</div>
   </div>
 </div>
@@ -748,7 +748,7 @@ onclick="var o=document.getElementById('opening');document.body.classList.remove
 
 <div class="modal" id="modal" onclick="if(event.target===this)closeModal()"><div class="box"><button class="close" onclick="closeModal()">×</button><div class="eyebrow" id="mt"></div><h2 id="mh"></h2><p id="md"></p></div></div>
 <button class="music" id="music" onclick="toggleMusic()" title="Música">♪</button>
-<audio id="audio" loop></audio>
+<audio id="audio" src="maliBu.mp3" loop preload="auto"></audio>
 
 <script>
 const GOOGLE_SHEETS_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbxFvneUw3xbcEHnmn-Ht6jhYRurmtj47Fo1Y9rRkyy59Nyoh8mAMFm9tHA7XS3gqg15/exec';
@@ -981,11 +981,15 @@ function calendar(){
 }
 function toggleMusic(){
   var audio=document.getElementById('audio');
-  if(audio && audio.src){
-    if(audio.paused) audio.play().catch(function(){});
-    else audio.pause();
+  var button=document.getElementById('music');
+  if(!audio) return;
+  if(audio.paused){
+    audio.play().then(function(){
+      if(button) button.classList.add('playing');
+    }).catch(function(){});
   }else{
-    alert('La música está preparada para incorporarla. Si me das la canción o archivo que queréis, la integro en la invitación.');
+    audio.pause();
+    if(button) button.classList.remove('playing');
   }
 }
 </script>
@@ -995,6 +999,32 @@ document.body.classList.add('locked');
 
 function openInvitation() {
   var opening = document.getElementById('opening');
+  var audio = document.getElementById('audio');
+  var button = document.getElementById('music');
+
+  // La pulsación del botón permite iniciar el audio incluso con las
+  // restricciones de reproducción automática de los navegadores.
+  if (audio) {
+    audio.volume = 0.08;
+    audio.play().then(function(){
+      if (button) button.classList.add('playing');
+
+      // Entrada progresiva de la música para que acompañe la apertura.
+      var targetVolume = 0.45;
+      var steps = 36;
+      var step = (targetVolume - audio.volume) / steps;
+      var fade = setInterval(function(){
+        if (audio.paused || audio.volume >= targetVolume) {
+          clearInterval(fade);
+          return;
+        }
+        audio.volume = Math.min(targetVolume, audio.volume + step);
+      }, 120);
+    }).catch(function(error){
+      console.log('No se pudo iniciar la música:', error);
+    });
+  }
+
   document.body.classList.remove('locked');
   if (opening && opening.parentNode) opening.parentNode.removeChild(opening);
   if (window.startCountdown) window.startCountdown();
